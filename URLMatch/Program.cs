@@ -28,6 +28,9 @@ namespace URLMatch
             //string csvFilePath = "result.csv";
             string csvFilePath = "../../../result.csv";
 
+            List<string> redirectionURL = new List<string>();
+            List<string> destinationURL = new List<string>();
+
             try
             {
                 ChromeOptions options = SetWebDriver();
@@ -36,11 +39,18 @@ namespace URLMatch
 
                 string[] urls = File.ReadAllLines(urlFilePath);
 
+                foreach (string line in urls)
+                {
+                    string[] parts = line.Split(',');
+                    redirectionURL.Add(parts[0].Trim());
+                    destinationURL.Add(parts[1].Trim());
+                }
+
                 string url = string.Empty;
                 int totalItems = urls.Length;
                 int currentItem = 0;
 
-                foreach (var item in urls)
+                foreach (var item in redirectionURL)
                 {
                     url = item;
                     await initEventListener(options, url, csvFilePath, session, driver);

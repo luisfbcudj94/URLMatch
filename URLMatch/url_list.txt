@@ -1,6 +1,3 @@
-https://www.safeway.com/bin/safeway/sso?banner=safeway&idp=false%E2%80%83%E2%80%8345.60.12.113%E2%80%83%E2%80%83server_redirect%E2%80%83%E2%80%83temporary%E2%80%83%E2%80%83https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize?client_id=0oap6ku01XJqIRdl42p6&response_type=code&scope=openid%20profile%20email%20offline_access&redirect_uri=https://www.safeway.com/bin/safeway/unified/sso/authorize&state=wacky-apparel-snowy-territory&nonce=658749a9-af64-43cf-bb09-862c01432c71&prompt=none
-https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize?client_id=0oap6ku01XJqIRdl42p6&response_type=code&scope=openid%20profile%20email%20offline_access&redirect_uri=https://www.safeway.com/bin/safeway/unified/sso/authorize&state=wasteful-stem-rabid-join&nonce=1d5ce452-f925-461a-92a5-c7f22521b11d&prompt=none
-https://www.safeway.com/bin/safeway/unified/sso/authorize?code=m6bfVWimjJX03M1equJQut2nGwu9no1URzQBRXqFxLQ&state=wasteful-stem-rabid-join
-https://www.safeway.com/content/www/safeway/en/home.html
-https://www.safeway.com/home.html
-https://www.safeway.com/
+https://www.redireccion1.com, https://www.destino1.com
+https://www.redireccion2.com, https://www.destino2.com
+https://www.redireccion3.com, https://www.destino3.com
