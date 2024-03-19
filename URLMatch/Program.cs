@@ -7,6 +7,7 @@ using OpenQA.Selenium.DevTools;
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace URLMatch
 {
@@ -14,55 +15,73 @@ namespace URLMatch
     {
         static async Task Main(string[] args)
         {
-            
-            //if (args.Length != 1)
-            //{
-            //    Console.WriteLine("Usage: URLMatch.exe url_list.txt");
-            //    return;
-            //}
+
+            if (args.Length != 1)
+            {
+                Console.WriteLine("Usage: URLMatch.exe url_list.txt");
+                return;
+            }
 
             Console.WriteLine("--------------------------\nUrl Redirection Validator\n--------------------------\n");
 
-            //string urlFilePath = args[0];
-            string urlFilePath = "../../../url_list.txt";
-            //string csvFilePath = "result.csv";
-            string csvFilePath = "../../../result.csv";
+            string urlFilePath = args[0];
+            string csvFilePath = "result.csv";
 
             List<string> redirectionURL = new List<string>();
             List<string> destinationURL = new List<string>();
 
+            string url = string.Empty;
+
             try
             {
-                ChromeOptions options = SetWebDriver();
-                ChromeDriver driver = CreateDriver(options);
-                DevToolsSession session = await StartSession(options, driver);
-
+                Console.WriteLine("\nReading URLs from the text file\n");
                 string[] urls = File.ReadAllLines(urlFilePath);
 
+                bool firstLine = true;
                 foreach (string line in urls)
                 {
+                    if (firstLine)
+                    {
+                        firstLine = false;
+                        continue; 
+                    }
+
                     string[] parts = line.Split(',');
                     redirectionURL.Add(parts[0].Trim());
                     destinationURL.Add(parts[1].Trim());
                 }
 
-                string url = string.Empty;
-                int totalItems = urls.Length;
+                if (redirectionURL.Count != destinationURL.Count)
+                {
+                    throw new Exception("The number of redirection URLs must be the same as the destination URLs.");
+                }
+
+                Console.WriteLine("\nURLs successfully read.\n");
+                int urlNumber = 0;
+                int totalItems = urls.Length-1;
                 int currentItem = 0;
 
-                foreach (var item in redirectionURL)
+                Console.WriteLine("\nStarting Chrome web driver.\n");
+                ChromeOptions options = SetWebDriver();
+                ChromeDriver driver = CreateDriver(options);
+                DevToolsSession session = await StartSession(driver);
+
+                for (int i = 0; i < redirectionURL.Count; i++)
                 {
-                    url = item;
-                    await initEventListener(options, url, csvFilePath, session, driver);
+                    url = redirectionURL[i];
+                    urlNumber = i;
+
+                    await InitEventListener(url, csvFilePath, session, driver, urlNumber, redirectionURL, destinationURL);
                     await Task.Delay(100);
 
                     currentItem++;
 
                     Console.WriteLine($"\nProcessed URLs: {currentItem} / {totalItems}\n");
-
                 }
 
-                
+                Console.WriteLine($"\nAll URLs have been successfully processed.\n");
+
+
             }
             catch (Exception e)
             {
@@ -74,15 +93,16 @@ namespace URLMatch
         {
             ChromeOptions options = new ChromeOptions();
             options.AddArgument("--disable-features=IsolateOrigins,site-per-process");
-            options.AddArguments("disable-features=NetworkService");
-            options.AddArguments("--disable-web-security");
-            options.AddArguments("--allow-running-insecure-content");
-            options.AddArguments("--disable-extensions");
-            options.AddArguments("--ignore-certificate-errors");
-            options.AddArguments("--disable-notifications");
-            options.AddArguments("--disable-popup-blocking");
-            options.AddArguments("--enable-chrome-browser-cloud-management");
-
+            options.AddArgument("disable-features=NetworkService");
+            options.AddArgument("--disable-web-security");
+            options.AddArgument("--allow-running-insecure-content");
+            options.AddArgument("--disable-extensions");
+            options.AddArgument("--ignore-certificate-errors");
+            options.AddArgument("--disable-notifications");
+            options.AddArgument("--disable-popup-blocking");
+            options.AddArgument("--enable-chrome-browser-cloud-management");
+            options.AddArgument("--disable-usb-device-redirector");
+            options.AddExcludedArguments("excludeSwitches", "enable-logging");
             //options.AddArgument("--headless");
 
             return options;
@@ -95,7 +115,7 @@ namespace URLMatch
             return driver;
         }
 
-        static async Task<DevToolsSession> StartSession(ChromeOptions options, ChromeDriver driver)
+        static async Task<DevToolsSession> StartSession(ChromeDriver driver)
         {
             IDevTools devTools = driver;
             DevToolsSession session = devTools.GetDevToolsSession();
@@ -104,7 +124,7 @@ namespace URLMatch
             return session;
         }
 
-        static async Task initEventListener(ChromeOptions options, string url, string csvFilePath, DevToolsSession session, ChromeDriver driver)
+        static async Task InitEventListener(string url, string csvFilePath, DevToolsSession session, ChromeDriver driver, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
         {
             bool firstRequest = false;
             string firstRequestId = string.Empty;
@@ -191,55 +211,55 @@ namespace URLMatch
 
             driver.Navigate().GoToUrl(url);
             await Task.Delay(3000);
-            processingData(dataToExcelRequest, dataToExcelResponse, csvFilePath);
+            processingData(dataToExcelRequest, dataToExcelResponse, csvFilePath, urlNumber, redirectionURL, destinationURL);
 
         }
 
-
-
-        static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, Dictionary<string, List<JObject>> dataToExcelResponse, string csvFilePath)
+        static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, Dictionary<string, List<JObject>> dataToExcelResponse, string csvFilePath, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
         {
-            Dictionary<string, List<JObject>> combinedDictionary = new Dictionary<string, List<JObject>>();
+            Dictionary<string, Dictionary<string, string>> requestData = new Dictionary<string, Dictionary<string, string>>();
 
-
-            HashSet<string> allKeys = new HashSet<string>(dataToExcelRequest.Keys.Concat(dataToExcelResponse.Keys));
-
-            foreach (var key in allKeys)
+            foreach (var requestId in dataToExcelRequest.Keys)
             {
-                List<JObject> requestJObjects = dataToExcelRequest.ContainsKey(key) ? dataToExcelRequest[key] : new List<JObject>();
+                var requestList = dataToExcelRequest[requestId];
 
-                List<JObject> responseJObjects = dataToExcelResponse.ContainsKey(key) ? dataToExcelResponse[key] : new List<JObject>();
+                var requestDict = new Dictionary<string, string>();
+                requestDict.Add("redirectionURL", redirectionURL[urlNumber]);
+                requestDict.Add("destinationURL", destinationURL[urlNumber]);
 
-                List<JObject> combinedJObjects = InterleaveLists(requestJObjects, responseJObjects);
+                var lastRequest = requestList.LastOrDefault();
+                var finalDestinationUrl = lastRequest?["authority"]?.ToString() + lastRequest?["path"]?.ToString();
 
-                combinedDictionary.Add(key, combinedJObjects);
+                var finalDomainUrl = GetDomainFromUrl(finalDestinationUrl);
+                var destinationDomainUrl = GetDomainFromUrl(destinationURL[urlNumber]);
+
+                var finalStatus = finalDomainUrl == destinationDomainUrl ? "Success" : "Failure";
+                requestDict.Add("finalDestinationUrl", finalDestinationUrl);
+                requestDict.Add("finalStatus", finalStatus);
+
+                requestData.Add(requestId, requestDict);
             }
 
-            WriteDictionaryToCsv(combinedDictionary, csvFilePath);
+            WriteDictionaryToCsv(requestData, csvFilePath);
         }
 
-        static List<JObject> InterleaveLists(List<JObject> list1, List<JObject> list2)
+        static string GetDomainFromUrl(string url)
         {
-            List<JObject> interleavedList = new List<JObject>();
-            int maxLength = Math.Max(list1.Count, list2.Count);
+            string domain = string.Empty;
+            Regex regex = new Regex(@"^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)");
 
-            for (int i = 0; i < maxLength; i++)
+            Match match = regex.Match(url);
+            if (match.Success)
             {
-                if (i < list1.Count)
-                {
-                    interleavedList.Add(list1[i]);
-                }
-                if (i < list2.Count)
-                {
-                    interleavedList.Add(list2[i]);
-                }
+                domain = match.Groups[1].Value;
             }
 
-            return interleavedList;
+            return domain;
         }
 
-        static void WriteDictionaryToCsv(Dictionary<string, List<JObject>> dictionary, string csvFilePath)
+        static void WriteDictionaryToCsv(Dictionary<string, Dictionary<string, string>> dictionary, string csvFilePath)
         {
+            Console.WriteLine("\nRegistering information in the CSV file.\n");
             var existsFile = File.Exists(csvFilePath);
 
             var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -253,35 +273,30 @@ namespace URLMatch
                 if (!existsFile)
                 {
                     csv.WriteField("Request Id");
-                    csv.WriteField("Action");
-                    csv.WriteField("URL");
-                    csv.WriteField("Status Code");
+                    csv.WriteField("Redirection URL");
+                    csv.WriteField("Destination URL");
+                    csv.WriteField("Final Destination URL");
+                    csv.WriteField("Final Status");
                     csv.NextRecord();
                 }
 
-                var allKeys = dictionary.Keys.ToList();
-
-                foreach (var key in allKeys)
+                foreach (var key in dictionary.Keys)
                 {
-                    var jObjects = dictionary[key];
+                    var requestData = dictionary[key];
+                    var redirectionUrl = requestData.GetValueOrDefault("redirectionURL", "");
+                    var destinationUrl = requestData.GetValueOrDefault("destinationURL", "");
+                    var finalDestinationUrl = requestData.GetValueOrDefault("finalDestinationUrl", "");
+                    var finalStatus = requestData.GetValueOrDefault("finalStatus", "");
 
-                    foreach (var jObject in jObjects)
-                    {
-                        var action = jObject["Action"].ToString();
-                        var url = action == "Request" ? $"{jObject["authority"]}{jObject["path"]}" : "";
-                        var statusCode = action == "Response" ? jObject["statusCode"]?.ToString() : "";
-
-                        csv.WriteField(key);
-                        csv.WriteField(action);
-                        csv.WriteField(url);
-                        csv.WriteField(statusCode);
-                        csv.NextRecord();
-                    }
-                }
+                    csv.WriteField(key);
+                    csv.WriteField(redirectionUrl);
+                    csv.WriteField(destinationUrl);
+                    csv.WriteField(finalDestinationUrl);
+                    csv.WriteField(finalStatus);
+                    csv.NextRecord();
+                } 
             }
         }
-
-
 
     }
 }
