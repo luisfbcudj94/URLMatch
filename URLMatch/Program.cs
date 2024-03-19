@@ -1,4 +1,15 @@
-﻿using CsvHelper.Configuration;
+﻿/*
+ * Program.cs - URLMatch
+ * 
+ * Description:
+ * This program is designed to validate URL redirections by comparing the expected destination URL with the final destination URL after redirection. 
+ * It reads a list of redirection URLs and their corresponding destination URLs from a text file, navigates to each redirection URL using a Chrome WebDriver, 
+ * captures the network requests and responses, and then determines the final destination URL and its status (Success/Failure) based on the comparison with 
+ * the expected destination URL. The results are saved in a CSV file.
+ */
+
+
+using CsvHelper.Configuration;
 using CsvHelper;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,6 +26,13 @@ namespace URLMatch
     {
         static async Task Main(string[] args)
         {
+            /*
+             * Main method of the program. It validates the input arguments, reads the URLs from the input file, initializes the Chrome WebDriver,
+             * and processes each URL to determine the final destination URL and its status.
+             * 
+             * Parameters:
+             * - args (string[]): Command-line arguments containing the path to the input file.
+             */
 
             if (args.Length != 1)
             {
@@ -91,6 +109,13 @@ namespace URLMatch
 
         static ChromeOptions SetWebDriver()
         {
+            /*
+             * Sets up the Chrome WebDriver options.
+             * 
+             * Returns:
+             * - ChromeOptions: Chrome WebDriver options.
+             */
+
             ChromeOptions options = new ChromeOptions();
             options.AddArgument("--disable-features=IsolateOrigins,site-per-process");
             options.AddArgument("disable-features=NetworkService");
@@ -110,6 +135,16 @@ namespace URLMatch
 
         static ChromeDriver CreateDriver(ChromeOptions options)
         {
+            /*
+             * Creates a new instance of Chrome WebDriver.
+             * 
+             * Parameters:
+             * - options (ChromeOptions): Chrome WebDriver options.
+             * 
+             * Returns:
+             * - ChromeDriver: Instance of Chrome WebDriver.
+             */
+
             var driver = new ChromeDriver(options);
 
             return driver;
@@ -117,6 +152,16 @@ namespace URLMatch
 
         static async Task<DevToolsSession> StartSession(ChromeDriver driver)
         {
+            /*
+             * Starts a new session with Chrome DevTools.
+             * 
+             * Parameters:
+             * - driver (ChromeDriver): Instance of Chrome WebDriver.
+             * 
+             * Returns:
+             * - Task<DevToolsSession>: Asynchronous task with the Chrome DevTools session.
+             */
+
             IDevTools devTools = driver;
             DevToolsSession session = devTools.GetDevToolsSession();
             await session.Domains.Network.EnableNetwork();
@@ -126,6 +171,22 @@ namespace URLMatch
 
         static async Task InitEventListener(string url, string csvFilePath, DevToolsSession session, ChromeDriver driver, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
         {
+            /*
+             * Initializes event listeners to capture network requests and responses during navigation.
+             * 
+             * Parameters:
+             * - url (string): Redirection URL to navigate to.
+             * - csvFilePath (string): Path to the CSV file to save the results.
+             * - session (DevToolsSession): Chrome DevTools session.
+             * - driver (ChromeDriver): Instance of Chrome WebDriver.
+             * - urlNumber (int): Index of the current URL being processed.
+             * - redirectionURL (List<string>): List of redirection URLs.
+             * - destinationURL (List<string>): List of destination URLs.
+             */
+
+            // Initialization of variables and dictionaries to store network data.
+            // Event listeners are set up to capture request and response information.
+
             bool firstRequest = false;
             string firstRequestId = string.Empty;
             bool stopSession = false;
@@ -217,6 +278,17 @@ namespace URLMatch
 
         static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, Dictionary<string, List<JObject>> dataToExcelResponse, string csvFilePath, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
         {
+           /*
+            * Processes to determine the final destination URL and its status.
+            * 
+            * Parameters:
+            * - dataToExcelRequest (Dictionary<string, List<JObject>>): Dictionary containing request data.
+            * - dataToExcelResponse (Dictionary<string, List<JObject>>): Dictionary containing response data.
+            * - csvFilePath (string): Path to the CSV file to save the results.
+            * - urlNumber (int): Index of the current URL being processed.
+            * - redirectionURL (List<string>): List of redirection URLs.
+            * - destinationURL (List<string>): List of destination URLs.
+            */
             Dictionary<string, Dictionary<string, string>> requestData = new Dictionary<string, Dictionary<string, string>>();
 
             foreach (var requestId in dataToExcelRequest.Keys)
@@ -245,6 +317,16 @@ namespace URLMatch
 
         static string GetDomainFromUrl(string url)
         {
+            /*
+             * Extracts the domain from a given URL
+             * 
+             * Parameters:
+             * - url (string): URL from which to extract the domain.
+             * 
+             * Returns:
+             * - string: Extracted domain from the URL.
+             */
+
             string domain = string.Empty;
             Regex regex = new Regex(@"^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)");
 
@@ -259,6 +341,14 @@ namespace URLMatch
 
         static void WriteDictionaryToCsv(Dictionary<string, Dictionary<string, string>> dictionary, string csvFilePath)
         {
+            /*
+             * Writes the contents of a dictionary to a CSV file.
+             * 
+             * Parameters:
+             * - dictionary (Dictionary<string, Dictionary<string, string>>): Dictionary containing data to be written to the CSV file.
+             * - csvFilePath (string): Path to the CSV file where the data will be written.
+             */
+
             Console.WriteLine("\nRegistering information in the CSV file.\n");
             var existsFile = File.Exists(csvFilePath);
 
