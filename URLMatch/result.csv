@@ -1,0 +1,15 @@
+Request Id,Action,URL,Status Code
+93F4B6685020D72C70C8E10F1896502A,Request,www.safeway.com/bin/safeway/sso?banner=safeway&idp=false%E2%80%83%E2%80%8345.60.12.113%E2%80%83%E2%80%83server_redirect%E2%80%83%E2%80%83temporary%E2%80%83%E2%80%83https://albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize?client_id=0oap6ku01XJqIRdl42p6&response_type=code&scope=openid%20profile%20email%20offline_access&redirect_uri=https://www.safeway.com/bin/safeway/unified/sso/authorize&state=wacky-apparel-snowy-territory&nonce=658749a9-af64-43cf-bb09-862c01432c71&prompt=none,
+93F4B6685020D72C70C8E10F1896502A,Response,,403
+CFA151F46260D174CFCDDDA4AE733C7E,Request,albertsons.okta.com/oauth2/ausp6soxrIyPrm8rS2p6/v1/authorize?client_id=0oap6ku01XJqIRdl42p6&response_type=code&scope=openid%20profile%20email%20offline_access&redirect_uri=https://www.safeway.com/bin/safeway/unified/sso/authorize&state=wasteful-stem-rabid-join&nonce=1d5ce452-f925-461a-92a5-c7f22521b11d&prompt=none,
+CFA151F46260D174CFCDDDA4AE733C7E,Response,,302
+CFA151F46260D174CFCDDDA4AE733C7E,Request,www.safeway.com/bin/safeway/unified/sso/authorize?state=wasteful-stem-rabid-join&error=login_required&error_description=The+client+specified+not+to+prompt%2C+but+the+user+is+not+logged+in.,
+CFA151F46260D174CFCDDDA4AE733C7E,Response,,403
+C981043E0233716FDEF5DB0D202F068D,Request,www.safeway.com/bin/safeway/unified/sso/authorize?code=m6bfVWimjJX03M1equJQut2nGwu9no1URzQBRXqFxLQ&state=wasteful-stem-rabid-join,
+C981043E0233716FDEF5DB0D202F068D,Response,,403
+A1C652CAB48F7FC47EFA3223579C70AC,Request,www.safeway.com/content/www/safeway/en/home.html,
+A1C652CAB48F7FC47EFA3223579C70AC,Response,,403
+E81847646118EA877ED771ACB4199D98,Request,www.safeway.com/home.html,
+E81847646118EA877ED771ACB4199D98,Response,,403
+7A967AE6CA41F5EAD72F0DD1EE72A260,Request,www.safeway.com/,
+7A967AE6CA41F5EAD72F0DD1EE72A260,Response,,403

@@ -6,6 +6,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace URLMatch
 {
@@ -13,21 +14,25 @@ namespace URLMatch
     {
         static async Task Main(string[] args)
         {
-            // Check if the URL file path is provided
-            if (args.Length != 1)
-            {
-                Console.WriteLine("Usage: URLMatch.exe url_list.txt");
-                return;
-            }
+            
+            //if (args.Length != 1)
+            //{
+            //    Console.WriteLine("Usage: URLMatch.exe url_list.txt");
+            //    return;
+            //}
 
             Console.WriteLine("--------------------------\nUrl Redirection Validator\n--------------------------\n");
 
-            string urlFilePath = args[0];
-            string csvFilePath = "result.csv";
+            //string urlFilePath = args[0];
+            string urlFilePath = "../../../url_list.txt";
+            //string csvFilePath = "result.csv";
+            string csvFilePath = "../../../result.csv";
 
             try
             {
-                ChromeOptions options = setWebDriver();
+                ChromeOptions options = SetWebDriver();
+                ChromeDriver driver = CreateDriver(options);
+                DevToolsSession session = await StartSession(options, driver);
 
                 string[] urls = File.ReadAllLines(urlFilePath);
 
@@ -38,7 +43,7 @@ namespace URLMatch
                 foreach (var item in urls)
                 {
                     url = item;
-                    await initSessionChrome(options, url, csvFilePath);
+                    await initEventListener(options, url, csvFilePath, session, driver);
                     await Task.Delay(100);
 
                     currentItem++;
@@ -55,7 +60,7 @@ namespace URLMatch
             }
         }
 
-        static ChromeOptions setWebDriver()
+        static ChromeOptions SetWebDriver()
         {
             ChromeOptions options = new ChromeOptions();
             options.AddArgument("--disable-features=IsolateOrigins,site-per-process");
@@ -66,12 +71,30 @@ namespace URLMatch
             options.AddArguments("--ignore-certificate-errors");
             options.AddArguments("--disable-notifications");
             options.AddArguments("--disable-popup-blocking");
-            options.AddArgument("--headless");
+            options.AddArguments("--enable-chrome-browser-cloud-management");
+
+            //options.AddArgument("--headless");
 
             return options;
         }
 
-        static async Task initSessionChrome(ChromeOptions options, string url, string csvFilePath)
+        static ChromeDriver CreateDriver(ChromeOptions options)
+        {
+            var driver = new ChromeDriver(options);
+
+            return driver;
+        }
+
+        static async Task<DevToolsSession> StartSession(ChromeOptions options, ChromeDriver driver)
+        {
+            IDevTools devTools = driver;
+            DevToolsSession session = devTools.GetDevToolsSession();
+            await session.Domains.Network.EnableNetwork();
+
+            return session;
+        }
+
+        static async Task initEventListener(ChromeOptions options, string url, string csvFilePath, DevToolsSession session, ChromeDriver driver)
         {
             bool firstRequest = false;
             string firstRequestId = string.Empty;
@@ -79,11 +102,6 @@ namespace URLMatch
 
             Dictionary<string, List<JObject>> dataToExcelRequest = new Dictionary<string, List<JObject>>();
             Dictionary<string, List<JObject>> dataToExcelResponse = new Dictionary<string, List<JObject>>();
-
-            using var driver = new ChromeDriver(options);
-            IDevTools devTools = driver;
-            DevToolsSession session = devTools.GetDevToolsSession();
-            await session.Domains.Network.EnableNetwork();
 
 
             session.DevToolsEventReceived += (sender, e) =>
@@ -162,9 +180,12 @@ namespace URLMatch
             };
 
             driver.Navigate().GoToUrl(url);
-            await Task.Delay(500);
+            await Task.Delay(3000);
             processingData(dataToExcelRequest, dataToExcelResponse, csvFilePath);
+
         }
+
+
 
         static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, Dictionary<string, List<JObject>> dataToExcelResponse, string csvFilePath)
         {
