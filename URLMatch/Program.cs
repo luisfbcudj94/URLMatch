@@ -269,14 +269,21 @@ namespace URLMatch
                 }
 
             };
-
-            driver.Navigate().GoToUrl(url);
-            await Task.Delay(3000);
-            processingData(dataToExcelRequest, dataToExcelResponse, csvFilePath, urlNumber, redirectionURL, destinationURL);
-
+            try
+            {
+                Console.WriteLine($"\nOpening the following URL {url}\n");
+                driver.Navigate().GoToUrl(url);
+                await Task.Delay(3000);
+                processingData(dataToExcelRequest, csvFilePath, urlNumber, redirectionURL, destinationURL);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"\nAn error occurred while processing the following URL {redirectionURL[urlNumber]}\n");
+                processingDataError(csvFilePath, urlNumber, redirectionURL, destinationURL);
+            }
         }
 
-        static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, Dictionary<string, List<JObject>> dataToExcelResponse, string csvFilePath, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
+        static void processingData(Dictionary<string, List<JObject>> dataToExcelRequest, string csvFilePath, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
         {
            /*
             * Processes to determine the final destination URL and its status.
@@ -311,6 +318,29 @@ namespace URLMatch
 
                 requestData.Add(requestId, requestDict);
             }
+
+            WriteDictionaryToCsv(requestData, csvFilePath);
+        }
+        static void processingDataError(string csvFilePath, int urlNumber, List<string> redirectionURL, List<string> destinationURL)
+        {
+            /*
+             * Processes to handle errors that occur while opening a URL and records the error in Excel.
+             * 
+             * Parameters:
+             * - csvFilePath (string): Path to the CSV file to save the results.
+             * - urlNumber (int): Index of the current URL being processed.
+             * - redirectionURL (List<string>): List of redirection URLs.
+             * - destinationURL (List<string>): List of destination URLs.
+             */
+
+            Dictionary<string, Dictionary<string, string>> requestData = new Dictionary<string, Dictionary<string, string>>();
+
+            var requestDict = new Dictionary<string, string>();
+            requestDict.Add("redirectionURL", redirectionURL[urlNumber]);
+            requestDict.Add("destinationURL", destinationURL[urlNumber]);
+            requestDict.Add("finalDestinationUrl", "");
+            requestDict.Add("finalStatus", "Error");
+            requestData.Add(Guid.Empty.ToString(), requestDict);
 
             WriteDictionaryToCsv(requestData, csvFilePath);
         }
